@@ -102,6 +102,12 @@ type PostFrameUpdate struct {
 	InstanceID              uint16
 }
 
+// IsShieldStun returns true if the player is in GuardDamage (shield stun),
+// indicating their shield was hit on this frame.
+func (p *PostFrameUpdate) IsShieldStun() bool {
+	return melee.IsShieldStun(p.ActionStateID)
+}
+
 // PlayerFrameUpdate holds the Pre/Post-frame updates for a given player/follower.
 type PlayerFrameUpdate struct {
 	PlayerIndex uint8
