@@ -599,7 +599,7 @@ func populateOpeningTypes(conversions []Conversion) {
 			}
 			lastMovePlayer := c.PlayerIndex
 			if len(c.Moves) > 0 {
-				lastMovePlayer = c.Moves[len(c.Moves)-1].PlayerIndex
+				lastMovePlayer = c.Moves[0].PlayerIndex
 			}
 			oppEnd := lastEndFrameByOpp[lastMovePlayer]
 			// isCounterAttack = oppEndFrame && oppEndFrame > conversion.startFrame
@@ -915,7 +915,7 @@ func incrementTechs(counts *ActionCounts, anim uint16, player, opponent types.Po
 
 func handleWavedash(counts *ActionCounts, animations []uint16, positionsY []float32) {
 	// Uses a 15-frame lookback and Y-displacement heuristic to improve wavedash/waveland
-	// detection accuracy". Uses a 15-frame lookback and a Y-displacement heuristic to
+	// detection accuracy. Uses a 15-frame lookback and a Y-displacement heuristic to
 	// distinguish true wavedashes from wavelands after a jump.
 	if len(animations) < 2 {
 		return
@@ -923,12 +923,12 @@ func handleWavedash(counts *ActionCounts, animations []uint16, positionsY []floa
 	current := animations[len(animations)-1]
 	prev := animations[len(animations)-2]
 	isSpecialLanding := current == 0x2b
-	isAcceptablePrev := prev == 0xec || (prev >= 0x18 && prev <= 0x22)
+	isAcceptablePrev := isWavedashInitiationAnimation(prev)
 	if !isSpecialLanding || !isAcceptablePrev {
 		return
 	}
-	const lookback = 15
-	start := len(animations) - lookback
+	const lookbackFrames = 15
+	start := len(animations) - lookbackFrames
 	if start < 0 {
 		start = 0
 	}
@@ -972,7 +972,7 @@ func handleWavedash(counts *ActionCounts, animations []uint16, positionsY []floa
 			break
 		}
 	}
-	pyStart := len(positionsY) - lookback
+	pyStart := len(positionsY) - lookbackFrames
 	if pyStart < 0 {
 		pyStart = 0
 	}
@@ -991,6 +991,13 @@ func handleWavedash(counts *ActionCounts, animations []uint16, positionsY []floa
 	} else {
 		counts.WavedashCount++
 	}
+}
+
+func isWavedashInitiationAnimation(animation uint16) bool {
+	if animation == 0xec {
+		return true
+	}
+	return animation >= 0x18 && animation <= 0x22
 }
 
 func risingEdgeButtonCount(prev, curr uint16) int {
