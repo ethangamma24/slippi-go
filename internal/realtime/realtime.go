@@ -1,6 +1,6 @@
 package realtime
 
-import nativeslippi "github.com/ethangamma24/slippi-go/internal/goslippi/slippi"
+import nativeslippi "github.com/ethangamma24/slippi-go/pkg/slippi/types"
 
 // LatestFrame returns the highest numbered finalized frame.
 func LatestFrame(frames map[int]nativeslippi.Frame) (nativeslippi.Frame, bool) {

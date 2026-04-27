@@ -3,12 +3,14 @@ package goslippi
 import (
 	"bytes"
 	"fmt"
+	"io"
+
+	"github.com/ethangamma24/slippi-go/internal/goslippi/event"
+	"github.com/ethangamma24/slippi-go/internal/goslippi/event/handler"
+	"github.com/ethangamma24/slippi-go/internal/goslippi/event/handler/handlers"
 	"github.com/ethangamma24/slippi-go/internal/goslippi/internal/errutil"
 	"github.com/ethangamma24/slippi-go/internal/goslippi/internal/logging"
-	"github.com/ethangamma24/slippi-go/internal/goslippi/slippi"
-	"github.com/ethangamma24/slippi-go/internal/goslippi/slippi/event"
-	"github.com/ethangamma24/slippi-go/internal/goslippi/slippi/event/handler"
-	"github.com/ethangamma24/slippi-go/internal/goslippi/slippi/event/handler/handlers"
+	"github.com/ethangamma24/slippi-go/pkg/slippi/types"
 	"github.com/toitware/ubjson"
 	"os"
 )
@@ -45,7 +47,26 @@ func ParseGame(filePath string) (slippi.Game, error) {
 	if err != nil {
 		return slippi.Game{}, err
 	}
+	return parseGameFromBytes(filePath, b)
+}
 
+// ParseGameFromBytes parses an in-memory .slp byte slice and returns the decoded game.
+// `name` is used in error wrapping so callers can attach a logical filename.
+func ParseGameFromBytes(name string, data []byte) (slippi.Game, error) {
+	return parseGameFromBytes(name, data)
+}
+
+// ParseGameFromReader reads all bytes from r and parses them. ReadAll is bounded by
+// the standard io.ReadAll behavior; callers wanting a hard size limit should pre-buffer.
+func ParseGameFromReader(name string, r io.Reader) (slippi.Game, error) {
+	data, err := io.ReadAll(r)
+	if err != nil {
+		return slippi.Game{}, fmt.Errorf("read replay %s: %w", name, err)
+	}
+	return parseGameFromBytes(name, data)
+}
+
+func parseGameFromBytes(name string, b []byte) (slippi.Game, error) {
 	p := parser{
 		RawParser: rawParser{
 			ParsedData: slippi.Data{
@@ -54,7 +75,7 @@ func ParseGame(filePath string) (slippi.Game, error) {
 		},
 	}
 	if err := ubjson.Unmarshal(b, &p); err != nil {
-		return slippi.Game{}, errutil.WithMessagef(err, ErrParsingGame, "filePath: %s", filePath)
+		return slippi.Game{}, errutil.WithMessagef(err, ErrParsingGame, "name: %s", name)
 	}
 
 	return slippi.Game{

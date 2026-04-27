@@ -2,7 +2,7 @@ package goslippi
 
 import (
 	"github.com/ethangamma24/slippi-go/internal/goslippi/internal/errutil"
-	"github.com/ethangamma24/slippi-go/internal/goslippi/slippi"
+	"github.com/ethangamma24/slippi-go/pkg/slippi/types"
 	"github.com/toitware/ubjson"
 )
 
@@ -22,12 +22,19 @@ func ParseMeta(filePath string) (slippi.Metadata, error) {
 	if err != nil {
 		return slippi.Metadata{}, err
 	}
+	return parseMetaFromBytes(filePath, b)
+}
 
+// ParseMetaFromBytes parses just the UBJSON metadata block from a .slp byte slice.
+func ParseMetaFromBytes(name string, data []byte) (slippi.Metadata, error) {
+	return parseMetaFromBytes(name, data)
+}
+
+func parseMetaFromBytes(name string, b []byte) (slippi.Metadata, error) {
 	m := metaOnlyGame{}
 	if err := ubjson.Unmarshal(b, &m); err != nil {
-		return slippi.Metadata{}, errutil.WithMessagef(err, ErrParsingMeta, "filePath: %s", filePath)
+		return slippi.Metadata{}, errutil.WithMessagef(err, ErrParsingMeta, "name: %s", name)
 	}
-
 	return m.Meta, nil
 }
 
