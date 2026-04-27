@@ -589,10 +589,11 @@ func populateOpeningTypes(conversions []Conversion) {
 		isTrade := len(indices) >= 2
 		for _, idx := range indices {
 			c := &conversions[idx]
-			if c.EndFrame == nil {
-				continue
+			if c.EndFrame != nil {
+				lastEndFrameByOpp[c.PlayerIndex] = *c.EndFrame
+			} else {
+				delete(lastEndFrameByOpp, c.PlayerIndex)
 			}
-			lastEndFrameByOpp[c.PlayerIndex] = *c.EndFrame
 			if isTrade {
 				c.OpeningType = "trade"
 				continue
@@ -914,9 +915,8 @@ func incrementTechs(counts *ActionCounts, anim uint16, player, opponent types.Po
 }
 
 func handleWavedash(counts *ActionCounts, animations []uint16, positionsY []float32) {
-	// Uses a 15-frame lookback and Y-displacement heuristic to improve wavedash/waveland
-	// detection accuracy. Uses a 15-frame lookback and a Y-displacement heuristic to
-	// distinguish true wavedashes from wavelands after a jump.
+	// Aligns with slippi-js: uses an 8-frame lookback and simple presence checks
+	// (no Y-displacement heuristic) to classify special-landings after air-dodge.
 	if len(animations) < 2 {
 		return
 	}
@@ -927,7 +927,7 @@ func handleWavedash(counts *ActionCounts, animations []uint16, positionsY []floa
 	if !isSpecialLanding || !isAcceptablePrev {
 		return
 	}
-	const lookbackFrames = 15
+	const lookbackFrames = 8
 	start := len(animations) - lookbackFrames
 	if start < 0 {
 		start = 0
@@ -951,45 +951,10 @@ func handleWavedash(counts *ActionCounts, animations []uint16, positionsY []floa
 	if hasAirDodge {
 		counts.AirDodgeCount--
 	}
-	if !hasKneeBend {
-		counts.WavelandCount++
-		return
-	}
-	// Count airborne jump frames (strictly above ACTION_KNEE_BEND, up to CONTROLLED_JUMP_END).
-	const airborneJumpStart = 0x19 // State.CONTROLLED_JUMP_START + 1
-	const controlledJumpEnd = 0x22 // State.CONTROLLED_JUMP_END
-	jumpFrames := 0
-	for _, a := range recent {
-		if a >= airborneJumpStart && a <= controlledJumpEnd {
-			jumpFrames++
-		}
-	}
-	// Find last knee-bend index within the recent window.
-	kneeBendRelIdx := -1
-	for i := len(recent) - 1; i >= 0; i-- {
-		if recent[i] == 0x18 {
-			kneeBendRelIdx = i
-			break
-		}
-	}
-	pyStart := len(positionsY) - lookbackFrames
-	if pyStart < 0 {
-		pyStart = 0
-	}
-	recentY := positionsY[pyStart:]
-	changedY := false
-	if kneeBendRelIdx >= 0 && kneeBendRelIdx < len(recentY) {
-		// Compare with an absolute 0.1 epsilon on the double-precision Y delta.
-		yDiff := float64(recentY[len(recentY)-1]) - float64(recentY[kneeBendRelIdx])
-		if yDiff < 0 {
-			yDiff = -yDiff
-		}
-		changedY = yDiff > 0.1
-	}
-	if jumpFrames >= 5 && changedY {
-		counts.WavelandCount++
-	} else {
+	if hasKneeBend {
 		counts.WavedashCount++
+	} else {
+		counts.WavelandCount++
 	}
 }
 

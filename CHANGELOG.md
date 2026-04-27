@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.1.2] — 2026-04-27
+
+Additional upstream parity bug fixes.
+
+### Fixed
+
+- `pkg/slippi/stats/compute.go` `handleWavedash`: aligned heuristic with slippi-js.
+  Changed lookback from 15 frames to 8 frames, removed Y-displacement and
+  jump-frame-count thresholds, and switched to simple presence checks for
+  knee-bend and air-dodge in the recent window. This fixes misclassification
+  between `wavedash`, `waveland`, and `airDodge` counts.
+- `pkg/slippi/stats/compute.go` `populateOpeningTypes`: no longer skips open
+  conversions (conversions where `endFrame` is nil). They are now classified
+  using the same `oppEndFrame > startFrame` logic as closed conversions, and
+  the per-opponent `lastEndFrameByOpp` map is properly cleared when a
+  conversion has no end frame. This fixes missing `trade` and `counter-attack`
+  classifications on open conversions.
+
+## [v0.1.1] — 2026-04-27
+
+Upstream parity bug fixes. The stats engine now matches slippi-js behavior for
+wavedash/waveland detection and opening-type classification.
+
+### Fixed
+
+- `pkg/slippi/stats/compute.go` `handleWavedash`: `isAcceptablePrev` now uses the
+  `isWavedashInitiationAnimation` helper, matching the slippi-js reference
+  structure for wavedash/waveland detection after an air-dodge special landing.
+- `pkg/slippi/stats/compute.go` `populateOpeningTypes`: attacker lookup now uses
+  `conversion.moves[0].playerIndex` (first move) instead of the last move,
+  aligning with slippi-js opening-type classification. This fixes occasional
+  1-count flips between `neutral-win` and `counter-attack` on conversions where
+  the victim hits back at the end.
+
 ## [v0.1.0] — 2026-04-26
 
 First semver-tagged release. The public API surface is now considered stable

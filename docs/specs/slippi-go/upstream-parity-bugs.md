@@ -11,10 +11,10 @@ Scope: feature
 
 ## Implementation Status
 
-- **Status:** 📝 Not Started
-- **Completed:** —
-- **Implemented by:** —
-- **Notes:** —
+- **Status:** ✅ Done
+- **Completed:** 2026-04-27
+- **Implemented by:** OpenCode
+- **Notes:** Both bugs fixed in `pkg/slippi/stats/compute.go` and released as v0.1.1.
 
 ---
 
