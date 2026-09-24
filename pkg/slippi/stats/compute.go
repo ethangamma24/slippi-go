@@ -12,6 +12,13 @@ const (
 	comboStringResetFrames = 45
 )
 
+// ComputeOptions controls optional behavior during stats computation.
+type ComputeOptions struct {
+	// ExcludedMoves is a list of move IDs whose opening conversions are
+	// removed from the output. A conversion is excluded if its first move
+	// (Moves[0].MoveID) matches any ID in this slice.
+	ExcludedMoves []uint8
+}
 
 type playerPair struct {
 	PlayerIndex   uint8
@@ -60,7 +67,7 @@ type playerInputState struct {
 	TriggerInputCount  int
 }
 
-func Compute(game types.Game) Stats {
+func Compute(game types.Game, opts ComputeOptions) Stats {
 	lastFrame := latestFrameNumber(game.Data.Frames)
 	playableFrameCount := lastFrame - types.FirstPlayableFrame
 	if playableFrameCount < 0 {
@@ -114,6 +121,7 @@ func Compute(game types.Game) Stats {
 			conversions[i].OpeningType = "neutral-win"
 		}
 	}
+	conversions = filterConversions(conversions, opts.ExcludedMoves)
 	overall := generateOverall(players, inputStates, conversions, playableFrameCount, game.Data.GameStart.IsTeams)
 
 	return Stats{
@@ -986,6 +994,26 @@ func prevAnimationRunLength(animations []uint16) int {
 		i--
 	}
 	return frameCount
+}
+
+func filterConversions(conversions []Conversion, excludedMoves []uint8) []Conversion {
+	if len(excludedMoves) == 0 {
+		return conversions
+	}
+	excluded := make(map[int]struct{}, len(excludedMoves))
+	for _, id := range excludedMoves {
+		excluded[int(id)] = struct{}{}
+	}
+	filtered := conversions[:0]
+	for _, c := range conversions {
+		if len(c.Moves) > 0 {
+			if _, ok := excluded[c.Moves[0].MoveID]; ok {
+				continue
+			}
+		}
+		filtered = append(filtered, c)
+	}
+	return filtered
 }
 
 func joystickRegion(x, y float32) int {

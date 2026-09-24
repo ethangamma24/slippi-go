@@ -78,7 +78,22 @@ func (g *Game) StatsTyped(ctx context.Context) (stats.Stats, error) {
 	if err := g.ensureParsed(ctx); err != nil {
 		return stats.Stats{}, err
 	}
-	return stats.Compute(g.parsed), nil
+	return stats.Compute(g.parsed, ComputeOptions{}), nil
+}
+
+// ComputeOptions is a type alias for stats.ComputeOptions.
+// It controls optional behavior during stats computation.
+type ComputeOptions = stats.ComputeOptions
+
+// NeutralBMoveID is the Slippi move ID for the neutral B special attack.
+const NeutralBMoveID = 17
+
+// StatsTypedWithOptions returns stats with the given options applied.
+func (g *Game) StatsTypedWithOptions(ctx context.Context, opts ComputeOptions) (stats.Stats, error) {
+	if err := g.ensureParsed(ctx); err != nil {
+		return stats.Stats{}, err
+	}
+	return stats.Compute(g.parsed, opts), nil
 }
 
 // FramesTyped returns the per-frame data in typed form. The map is the same one
